@@ -6,14 +6,18 @@ import (
 )
 
 const (
-	port = "8080"
+	port         = "8080"
+	filepathRoot = "."
 )
 
 func server() error {
-	mux := http.NewServeMux()
+	fileServer := http.FileServer(http.Dir(filepathRoot))
 
-	server := http.Server {
-		Addr: ":" + port,
+	mux := http.NewServeMux()
+	mux.Handle("/", fileServer)
+
+	server := http.Server{
+		Addr:    ":" + port,
 		Handler: mux,
 	}
 
