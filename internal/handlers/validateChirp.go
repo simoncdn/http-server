@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type Parameters struct {
@@ -25,7 +26,28 @@ func ValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJson(w, http.StatusOK, map[string]bool{"isValid": true})
+	cleanedBody := getCleanedBody(parameters.Body)
+	respondWithJson(w, http.StatusOK, cleanedBody)
+}
+
+func getCleanedBody(message string) map[string]string {
+	badWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+
+	words := strings.Fields(message)
+	for i, word := range words {
+		loweredWord := strings.ToLower(word)
+
+		if _, ok := badWords[loweredWord]; ok {
+			words[i] = "****"
+		}
+	}
+
+	cleanedMessage := strings.Join(words, " ")
+	return map[string]string{"cleaned_body": cleanedMessage}
 }
 
 func respondWithJson(w http.ResponseWriter, statusCode int, message interface{}) {
