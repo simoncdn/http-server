@@ -10,13 +10,16 @@ const (
 	filepathRoot = "."
 )
 
-func server() error {
+func server(cfg *apiConfig) error {
 	fileServer := http.FileServer(http.Dir(filepathRoot))
+	fileServerHandler := http.StripPrefix("/app", fileServer)
 
 	mux := http.NewServeMux()
 
-	mux.Handle("/app/", http.StripPrefix("/app", fileServer))
+	mux.Handle("/app/", cfg.middlewareMetricsInc(fileServerHandler))
 	mux.HandleFunc("/healthz", healthzHandler)
+	mux.HandleFunc("/metrics", cfg.metricsHandler)
+	mux.HandleFunc("/reset", cfg.resetMetricsHandler)
 
 	server := http.Server{
 		Addr:    ":" + port,
@@ -32,8 +35,26 @@ func server() error {
 	return nil
 }
 
-func healthzHandler (res http.ResponseWriter, _ *http.Request) {	
-		res.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		res.WriteHeader(http.StatusOK)
-		res.Write([]byte("OK"))
+func healthzHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
+func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
+	hits := cfg.fileserverHits.Load()
+	resBody := fmt.Sprintf("Hits: %d", hits)
+
+	w.Header().Set("Content-type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(resBody))
+}
+
+func (cfg *apiConfig) resetMetricsHandler(w http.ResponseWriter, r *http.Request) {
+	cfg.fileserverHits.Store(0)
+	resBody := "Hits reset to 0"
+
+	w.Header().Set("Content-type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(resBody))
 }

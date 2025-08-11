@@ -1,5 +1,14 @@
 package main
 
+import "sync/atomic"
+
+type apiConfig struct {
+	fileserverHits atomic.Int32
+}
+
 func main() {
-	server()
+	apiCfg := apiConfig{
+		fileserverHits: atomic.Int32{},
+	}
+	server(&apiCfg)
 }
