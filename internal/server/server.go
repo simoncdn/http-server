@@ -42,9 +42,9 @@ func (s *Server) setupRoutes() {
 	metricsHandler := handlers.NewMetricsHandler(s.config)
 
 	s.mux.Handle("/app/", metricsMiddleware(fileServerHandler))
-	s.mux.HandleFunc("GET /healthz", handlers.HealthzHandler)
-	s.mux.HandleFunc("GET /metrics", metricsHandler.GetMetrics)
-	s.mux.HandleFunc("POST /reset", metricsHandler.ResetMetrics)
+	s.mux.HandleFunc("GET /api/healthz", handlers.HealthzHandler)
+	s.mux.HandleFunc("GET /admin/metrics", metricsHandler.GetMetrics)
+	s.mux.HandleFunc("POST /admin/reset", metricsHandler.ResetMetrics)
 }
 
 func (s *Server) Start() error {
