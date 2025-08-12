@@ -5,6 +5,8 @@ import (
 
 	"github.com/simoncdn/http-server/internal/config"
 	"github.com/simoncdn/http-server/internal/server"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
