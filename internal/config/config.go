@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"os"
@@ -15,10 +16,12 @@ type Config struct {
 	StaticDir      string
 	FileserverHits atomic.Int32
 	DB             *database.Queries
+	Plateform      string
 }
 
 func New() *Config {
 	godotenv.Load()
+
 	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -26,11 +29,17 @@ func New() *Config {
 	}
 	dbQueries := database.New(db)
 
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
+
 	return &Config{
 		Port:           "8080",
 		StaticDir:      "./web/static",
 		FileserverHits: atomic.Int32{},
 		DB:             dbQueries,
+		Plateform:      platform,
 	}
 }
 
@@ -44,4 +53,8 @@ func (c *Config) IncrementHits() {
 
 func (c *Config) ResetHits() {
 	c.FileserverHits.Store(0)
+}
+
+func (c *Config) ResetUsers(ctx context.Context) {
+	c.DB.DeleteUsers(ctx)
 }

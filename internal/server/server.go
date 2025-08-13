@@ -40,12 +40,15 @@ func (s *Server) setupRoutes() {
 	fileServerHandler := http.StripPrefix("/app", fileServer)
 
 	metricsHandler := handlers.NewMetricsHandler(s.config)
+	userHandler := handlers.NewUserHanlder(s.config)
+	resetHandler := handlers.NewResetHandler(s.config)
 
 	s.mux.Handle("/app/", metricsMiddleware(fileServerHandler))
 	s.mux.HandleFunc("GET /api/healthz", handlers.HealthzHandler)
 	s.mux.HandleFunc("POST /api/validate_chirp", handlers.ValidateChirp)
+	s.mux.HandleFunc("POST /api/users", userHandler.CreateUser)
 	s.mux.HandleFunc("GET /admin/metrics", metricsHandler.GetMetrics)
-	s.mux.HandleFunc("POST /admin/reset", metricsHandler.ResetMetrics)
+	s.mux.HandleFunc("POST /admin/reset", resetHandler.Reset)
 }
 
 func (s *Server) Start() error {

@@ -34,12 +34,3 @@ func (h *MetricsHandler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(resBody))
 }
-
-func (h *MetricsHandler) ResetMetrics(w http.ResponseWriter, r *http.Request) {
-	h.config.ResetHits()
-	resBody := "Hits reset to 0"
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(resBody))
-}
