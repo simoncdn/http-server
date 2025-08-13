@@ -47,6 +47,7 @@ func (s *Server) setupRoutes() {
 	s.mux.Handle("/app/", metricsMiddleware(fileServerHandler))
 	s.mux.HandleFunc("GET /api/healthz", handlers.HealthzHandler)
 	s.mux.HandleFunc("GET /api/chirps", chirpHanlder.GetChirps)
+	s.mux.HandleFunc("GET /api/chirps/{chirpID}", chirpHanlder.GetChirp)
 	s.mux.HandleFunc("POST /api/chirps", chirpHanlder.CreateChirp)
 	s.mux.HandleFunc("POST /api/users", userHandler.CreateUser)
 	s.mux.HandleFunc("GET /admin/metrics", metricsHandler.GetMetrics)

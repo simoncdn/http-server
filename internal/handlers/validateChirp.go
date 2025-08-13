@@ -84,7 +84,7 @@ func (h *ChirpHandler) GetChirps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chirps := []Chirp{}
-	for _, dbChirp := range dbChirps{
+	for _, dbChirp := range dbChirps {
 		chirps = append(chirps, Chirp{
 			ID:        dbChirp.ID,
 			CreatedAt: dbChirp.CreatedAt,
@@ -95,6 +95,35 @@ func (h *ChirpHandler) GetChirps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, err := json.Marshal(chirps)
+	if err != nil {
+		fmt.Println("couldn't marshal chirps: ", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(data))
+}
+
+func (h *ChirpHandler) GetChirp(w http.ResponseWriter, r *http.Request) {
+	chirpId := r.PathValue("chirpID")
+
+	chirpUUID, err := uuid.Parse(chirpId)
+	if err != nil {
+		fmt.Println("couldn't parse chirpId into uuid", err)
+		return
+	}
+
+	fmt.Printf("chirpId: %s | chirpUUID: %s", chirpId, chirpUUID)
+
+	chirp, err := h.cfg.DB.GetChirp(r.Context(), chirpUUID)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	formattedChirp := mapChirpToResponse(chirp)
+	data, err := json.Marshal(formattedChirp)
 	if err != nil {
 		fmt.Println("couldn't marshal chirps: ", err)
 		return
