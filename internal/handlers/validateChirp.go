@@ -1,17 +1,44 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/simoncdn/http-server/internal/config"
+	"github.com/simoncdn/http-server/internal/database"
 )
 
-type Parameters struct {
-	Body string `json:"body"`
+type ChirpHandler struct {
+	cfg *config.Config
 }
 
-func ValidateChirp(w http.ResponseWriter, r *http.Request) {
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+func NewChirpHanler(cfg *config.Config) *ChirpHandler {
+	newChirpHanlder := &ChirpHandler{
+		cfg: cfg,
+	}
+
+	return newChirpHanlder
+}
+
+func (h *ChirpHandler) CreateChirp(w http.ResponseWriter, r *http.Request) {
+	type Parameters struct {
+		Body   string    `json:"body"`
+		UserId uuid.UUID `json:"user_id"`
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	parameters := Parameters{}
 
@@ -27,10 +54,40 @@ func ValidateChirp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cleanedBody := getCleanedBody(parameters.Body)
-	respondWithJson(w, http.StatusOK, cleanedBody)
+	newChirp := database.CreateChirpParams{
+		UserID: parameters.UserId,
+		Body:   cleanedBody,
+	}
+
+	chirp, err := h.cfg.DB.CreateChirp(context.Background(), newChirp)
+	if err != nil {
+		fmt.Println("error on creating chirp:", err)
+		return
+	}
+
+	formattedChirp := mapChirpToResponse(chirp)
+	marchalledChirp, err := json.Marshal(formattedChirp)
+	if err != nil {
+		fmt.Println("error on creating chirp:", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(marchalledChirp)
 }
 
-func getCleanedBody(message string) map[string]string {
+func mapChirpToResponse(chirp database.Chirp) Chirp {
+	return Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	}
+}
+
+func getCleanedBody(message string) string {
 	badWords := map[string]struct{}{
 		"kerfuffle": {},
 		"sharbert":  {},
@@ -47,7 +104,7 @@ func getCleanedBody(message string) map[string]string {
 	}
 
 	cleanedMessage := strings.Join(words, " ")
-	return map[string]string{"cleaned_body": cleanedMessage}
+	return cleanedMessage
 }
 
 func respondWithJson(w http.ResponseWriter, statusCode int, message interface{}) {
