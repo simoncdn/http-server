@@ -42,6 +42,7 @@ func (s *Server) setupRoutes() {
 	metricsHandler := handlers.NewMetricsHandler(s.config)
 	userHandler := handlers.NewUserHanlder(s.config)
 	chirpHanlder := handlers.NewChirpHanler(s.config)
+	loginHanlder := handlers.NewLoginHandler(s.config)
 	resetHandler := handlers.NewResetHandler(s.config)
 
 	s.mux.Handle("/app/", metricsMiddleware(fileServerHandler))
@@ -50,6 +51,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("GET /api/chirps/{chirpID}", chirpHanlder.GetChirp)
 	s.mux.HandleFunc("POST /api/chirps", chirpHanlder.CreateChirp)
 	s.mux.HandleFunc("POST /api/users", userHandler.CreateUser)
+	s.mux.HandleFunc("POST /api/login", loginHanlder.Login)
 	s.mux.HandleFunc("GET /admin/metrics", metricsHandler.GetMetrics)
 	s.mux.HandleFunc("POST /admin/reset", resetHandler.Reset)
 }

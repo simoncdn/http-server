@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/simoncdn/http-server/internal/auth"
 	"github.com/simoncdn/http-server/internal/config"
 	"github.com/simoncdn/http-server/internal/database"
 )
@@ -31,7 +32,8 @@ func NewUserHanlder(cfg *config.Config) *UserHandler {
 
 func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	type UserRequest struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	var userRequest UserRequest
@@ -44,14 +46,24 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := userRequest.Email
+	hashedPassword, err := auth.HashPassword(userRequest.Password)
+	if err != nil {
+		fmt.Errorf("hash password error: %w", err)
+		return
+	}
 
-	user, err := u.cfg.DB.CreateUser(r.Context(), email)
+	newUser := database.CreateUserParams {
+		Email: email,
+		HashedPassword: hashedPassword,
+	}
+
+	user, err := u.cfg.DB.CreateUser(r.Context(), newUser)
 	if err != nil {
 		fmt.Errorf("couldn't create a new user with email %s: %w", email, err)
 		return
 	}
 
-	userFormatted := mapUserToResponse(user)
+	userFormatted := MapUserToResponse(user)
 
 	data, err := json.Marshal(userFormatted)
 	if err != nil {
@@ -64,7 +76,7 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(data))
 }
 
-func mapUserToResponse(user database.User) User {
+func MapUserToResponse(user database.User) User {
 	return User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
