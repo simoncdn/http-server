@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/simoncdn/http-server/internal/auth"
 	"github.com/simoncdn/http-server/internal/config"
 	"github.com/simoncdn/http-server/internal/database"
 )
@@ -34,14 +35,25 @@ func NewChirpHanler(cfg *config.Config) *ChirpHandler {
 
 func (h *ChirpHandler) CreateChirp(w http.ResponseWriter, r *http.Request) {
 	type Parameters struct {
-		Body   string    `json:"body"`
-		UserId uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
+	}
+
+	accessToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		println(err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(accessToken, h.cfg.JWTSecret)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	parameters := Parameters{}
 
-	err := decoder.Decode(&parameters)
+	err = decoder.Decode(&parameters)
 	if err != nil {
 		respondWithJson(w, http.StatusBadRequest, map[string]string{"error": "Something went wrong"})
 		return
@@ -54,7 +66,7 @@ func (h *ChirpHandler) CreateChirp(w http.ResponseWriter, r *http.Request) {
 
 	cleanedBody := getCleanedBody(parameters.Body)
 	newChirp := database.CreateChirpParams{
-		UserID: parameters.UserId,
+		UserID: userID,
 		Body:   cleanedBody,
 	}
 

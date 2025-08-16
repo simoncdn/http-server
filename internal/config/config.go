@@ -17,6 +17,7 @@ type Config struct {
 	FileserverHits atomic.Int32
 	DB             *database.Queries
 	Plateform      string
+	JWTSecret      string
 }
 
 func New() *Config {
@@ -34,12 +35,18 @@ func New() *Config {
 		log.Fatal("PLATFORM must be set")
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET is not set", err)
+	}
+
 	return &Config{
 		Port:           "8080",
 		StaticDir:      "./web/static",
 		FileserverHits: atomic.Int32{},
 		DB:             dbQueries,
 		Plateform:      platform,
+		JWTSecret:      jwtSecret,
 	}
 }
 

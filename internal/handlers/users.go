@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -41,15 +41,13 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&userRequest)
 	if err != nil {
-		fmt.Errorf("couldn't decode user request: %w", err)
-		return
+		log.Fatal("couldn't decode user request: %w", err)
 	}
 
 	email := userRequest.Email
 	hashedPassword, err := auth.HashPassword(userRequest.Password)
 	if err != nil {
-		fmt.Errorf("hash password error: %w", err)
-		return
+		log.Fatal("hash password error: %w", err)
 	}
 
 	newUser := database.CreateUserParams {
@@ -59,16 +57,14 @@ func (u *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := u.cfg.DB.CreateUser(r.Context(), newUser)
 	if err != nil {
-		fmt.Errorf("couldn't create a new user with email %s: %w", email, err)
-		return
+		log.Fatal("couldn't create a new user: %w", err)
 	}
 
 	userFormatted := MapUserToResponse(user)
 
 	data, err := json.Marshal(userFormatted)
 	if err != nil {
-		fmt.Errorf("error on marshalling user: %w", err)
-		return
+		log.Fatal("error on marshalling user: %w", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
